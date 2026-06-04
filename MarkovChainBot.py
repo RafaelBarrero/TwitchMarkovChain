@@ -1,8 +1,11 @@
 import random
 from typing import List, Tuple
 
+import nltk
+import requests
 from TwitchWebsocket import Message, TwitchWebsocket
 from nltk.tokenize import sent_tokenize
+from nltk.downloader import Downloader
 import socket, time, logging, re, string
 
 from Settings import Settings, SettingsData
@@ -583,4 +586,10 @@ class MarkovChain:
         return self.link_regex.search(message)
 
 if __name__ == "__main__":
+    d = Downloader()
+    if d.is_installed("punkt_tab"):
+        logger.info("punkt_tab instalado")
+    else:
+        logger.info("punkt_tab NO está instalado. Se instalará")
+        nltk.download('punkt_tab')
     MarkovChain()

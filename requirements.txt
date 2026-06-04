@@ -1,2 +1,3 @@
 TwitchWebsocket
 nltk
+requests
