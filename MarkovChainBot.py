@@ -23,7 +23,7 @@ class MarkovChain:
         self.prev_message_t = 0
         self._enabled = True
         # This regex should detect similar phrases as links as Twitch does
-        self.link_regex = re.compile("\w+\.[a-z]{2,}")
+        self.link_regex = re.compile(r"\w+\.[a-z]{2,}")
         # List of moderators used in blacklist modification, includes broadcaster
         self.mod_list = []
         self.set_blacklist()
