@@ -112,22 +112,6 @@ class MarkovChain:
         try:
             if m.type == "366":
                 logger.info(f"Successfully joined channel: #{m.channel}")
-                # Get the list of mods used for modifying the blacklist
-                logger.info("Fetching mod list...")
-                self.ws.send_message("/mods")
-
-            elif m.type == "NOTICE":
-                # Check whether the NOTICE is a response to our /mods request
-                if m.message.startswith("The moderators of this channel are:"):
-                    string_list = m.message.replace("The moderators of this channel are:", "").strip()
-                    self.mod_list = [m.channel] + string_list.split(", ")
-                    logger.info(f"Fetched mod list. Found {len(self.mod_list) - 1} mods.")
-                elif m.message == "There are no moderators of this channel.":
-                    self.mod_list = [m.channel]
-                    logger.info(f"Fetched mod list. Found no mods.")
-                # If it is not, log this NOTICE
-                else:
-                    logger.info(m.message)
 
             elif m.type in ("PRIVMSG", "WHISPER"):
                 if m.message.startswith("!enable") and self.check_if_permissions(m):
