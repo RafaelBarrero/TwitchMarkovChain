@@ -150,3 +150,9 @@ settings.json
 
 # Database files
 *.db
+
+# Tokens
+streameroauth*.txt
+
+# Jetbrains
+.idea
