@@ -35,7 +35,7 @@ class MarkovChain:
                 raise ValueError("Value for \"HelpMessageTimer\" in must be at least 300 seconds, or a negative number for no help messages.")
             t = LoopingTimer(self.help_message_timer, self.send_help_message)
             t.start()
-        
+
         # Set up daemon Timer to send automatic generation messages
         if self.automatic_generation_timer > 0:
             if self.automatic_generation_timer < 30:
@@ -43,14 +43,15 @@ class MarkovChain:
             t = LoopingTimer(self.automatic_generation_timer, self.send_automatic_generation_message)
             t.start()
 
-        self.ws = TwitchWebsocket(host=self.host, 
-                                  port=self.port,
-                                  chan=self.chan,
-                                  nick=self.nick,
-                                  auth=self.auth,
-                                  callback=self.message_handler,
-                                  capability=["commands", "tags"],
-                                  live=True)
+        self.ws = TwitchWebsocket(host=self.host,
+          port=self.port,
+          chan=self.chan,
+          nick=self.nick,
+          auth=self.auth,
+          callback=self.message_handler,
+          capability=["commands", "tags"],
+          live=True
+        )
         self.ws.start_bot()
 
     def set_settings(self, settings: SettingsData):
@@ -145,11 +146,10 @@ class MarkovChain:
                         self.ws.send_whisper(m.user, f"Please add exactly 1 integer parameter, eg: !setcd 30.")
 
             if m.type == "PRIVMSG":
-
                 # Ignore bot messages
                 if m.user.lower() in self.denied_users:
                     return
-                
+
                 if self.check_if_generate(m.message):
                     if not self.enable_generate_command and not self.check_if_permissions(m):
                         return
@@ -177,7 +177,7 @@ class MarkovChain:
                             self.send_whisper(m.user, f"Cooldown hit: {self.prev_message_t + self.cooldown - cur_time:0.2f} out of {self.cooldown:.0f}s remaining. !nopm to stop these cooldown pm's.")
                         logger.info(f"Cooldown hit with {self.prev_message_t + self.cooldown - cur_time:0.2f}s remaining.")
                     return
-                
+
                 # Send help message when requested.
                 elif m.message.startswith(("!ghelp", "!genhelp", "!generatehelp")):
                     self.send_help_message()
@@ -185,18 +185,18 @@ class MarkovChain:
                 # Ignore the message if it is deemed a command
                 elif self.check_if_other_command(m.message):
                     return
-                
+
                 # Ignore the message if it contains a link.
                 elif self.check_link(m.message):
                     return
 
                 if "emotes" in m.tags:
-                    # If the list of emotes contains "emotesv2_", then the message contains a bit emote, 
+                    # If the list of emotes contains "emotesv2_", then the message contains a bit emote,
                     # and we choose not to learn from those messages.
                     if "emotesv2_" in m.tags["emotes"]:
                         return
 
-                    # Replace modified emotes with normal versions, 
+                    # Replace modified emotes with normal versions,
                     # as the bot will never have the modified emotes unlocked at the time.
                     for modifier in self.extract_modifiers(m.tags["emotes"]):
                         m.message = m.message.replace(modifier, "")
@@ -205,7 +205,7 @@ class MarkovChain:
                 if self.check_filter(m.message):
                     logger.warning(f"Sentence contained blacklisted word or phrase:\"{m.message}\"")
                     return
-                
+
                 else:
                     # Try to split up sentences. Requires nltk's 'punkt' resource
                     try:
@@ -224,15 +224,15 @@ class MarkovChain:
                         # Double spaces will lead to invalid rules. We remove empty words here
                         if "" in words:
                             words = [word for word in words if word]
-                            
+
                         # If the sentence is too short, ignore it and move on to the next.
                         if len(words) <= self.key_length:
                             continue
-                        
+
                         # Add a new starting point for a sentence to the <START>
                         #self.db.add_rule(["<START>"] + [words[x] for x in range(self.key_length)])
                         self.db.add_start_queue([words[x] for x in range(self.key_length)])
-                        
+
                         # Create Key variable which will be used as a key in the Dictionary for the grammar
                         key = list()
                         for word in words:
@@ -240,16 +240,16 @@ class MarkovChain:
                             if len(key) < self.key_length:
                                 key.append(word)
                                 continue
-                            
+
                             self.db.add_rule_queue(key + [word])
-                            
+
                             # Remove the first word, and add the current word,
                             # so that the key is correct for the next word.
                             key.pop(0)
                             key.append(word)
                         # Add <END> at the end of the sentence
                         self.db.add_rule_queue(key + ["<END>"])
-                    
+
             elif m.type == "WHISPER":
                 # Allow people to whisper the bot to disable or enable whispers.
                 if m.message == "!nopm":
@@ -262,7 +262,7 @@ class MarkovChain:
                     self.db.remove_whisper_ignore(m.user)
                     self.ws.send_whisper(m.user, "You will again be sent whispers. Type !nopm to disable again. ")
 
-                # Note that I add my own username to this list to allow me to manage the 
+                # Note that I add my own username to this list to allow me to manage the
                 # blacklist in channels of my bot in channels I am not modded in.
                 # I may modify this and add a "allowed users" field in the settings file.
                 elif m.user.lower() in self.mod_list + ["cubiedev"] + self.allowed_users:
@@ -291,7 +291,7 @@ class MarkovChain:
                                 self.ws.send_whisper(m.user, "Word was already not in the blacklist.")
                         else:
                             self.ws.send_whisper(m.user, "Expected Format: `!whitelist word` to remove `word` from the blacklist.")
-                    
+
                     # Checking whether a word is in the blacklist
                     elif self.check_if_our_command(m.message, "!check"):
                         if len(m.message.split()) == 2:
@@ -306,9 +306,9 @@ class MarkovChain:
             elif m.type == "CLEARMSG":
                 # If a message is deleted, its contents will be unlearned
                 # or rather, the "occurances" attribute of each combinations of words in the sentence
-                # is reduced by 5, and deleted if the occurances is now less than 1. 
+                # is reduced by 5, and deleted if the occurances is now less than 1.
                 self.db.unlearn(m.message)
-                
+
                 # TODO: Think of some efficient way to check whether it was our message that got deleted.
                 # If the bot's message was deleted, log this as an error
                 #if m.user.lower() == self.nick.lower():
@@ -322,7 +322,7 @@ class MarkovChain:
 
         Args:
             params (List[str]): A list of words to use as an input to use as the start of generating.
-        
+
         Returns:
             Tuple[str, bool]: A tuple of a sentence as the first value, and a boolean indicating
                 whether the generation succeeded as the second value.
@@ -368,8 +368,8 @@ class MarkovChain:
             else:
                 # If nothing's ever been said
                 return "There is not enough learned information yet.", False
-        
-        # Counter to prevent infinite loops (i.e. constantly generating <END> while below the 
+
+        # Counter to prevent infinite loops (i.e. constantly generating <END> while below the
         # minimum number of words to generate)
         i = 0
         while self.sentence_length(sentences) < self.max_sentence_length and i < self.max_sentence_length * 2:
@@ -397,11 +397,11 @@ class MarkovChain:
 
             # Otherwise add the word
             sentences[-1].append(word)
-            
+
             # Shift the key so on the next iteration it gets the next item
             key.pop(0)
             key.append(word)
-        
+
         # If there were params, but the sentence resulting is identical to the params
         # Then the params did not result in an actual sentence
         # If so, restart without params
@@ -467,7 +467,7 @@ class MarkovChain:
             with open("blacklist.txt", "r") as f:
                 self.blacklist = [l.replace("\n", "") for l in f.readlines()]
                 logger.debug("Loaded Blacklist.")
-        
+
         except FileNotFoundError:
             logger.warning("Loading Blacklist Failed!")
             self.blacklist = ["<start>", "<end>"]
@@ -484,7 +484,7 @@ class MarkovChain:
 
     def send_automatic_generation_message(self) -> None:
         """Send an automatic generation message to the connected chat.
-        
+
         As long as the bot wasn't disabled, just like if someone typed "!g" in chat.
         """
         if self._enabled:
@@ -501,7 +501,7 @@ class MarkovChain:
 
     def send_whisper(self, user: str, message: str) -> None:
         """Optionally send a whisper, only if "WhisperCooldown" is True.
-        
+
         Args:
             user (str): The user to potentially whisper.
             message (str): The message to potentially whisper
@@ -511,7 +511,7 @@ class MarkovChain:
 
     def check_filter(self, message: str) -> bool:
         """Returns True if message contains a banned word.
-        
+
         Args:
             message (str): The message to check.
         """
@@ -537,14 +537,14 @@ class MarkovChain:
 
         Args:
             message (str): The message to check for the generate command (i.e !generate or !g).
-        
+
         Returns:
             bool: True if the first word in message is a generate command.
         """
         return self.check_if_our_command(message, *self.generate_commands)
-    
+
     def check_if_other_command(self, message: str) -> bool:
-        """True if the message is any command, except /me. 
+        """True if the message is any command, except /me.
 
         Is used to avoid learning and generating commands.
 
@@ -556,15 +556,15 @@ class MarkovChain:
                 with the exception of /me.
         """
         return message.startswith(("!", "/", ".")) and not message.startswith("/me")
-    
+
     def check_if_permissions(self, m: Message) -> bool:
         """True if the user has heightened permissions.
-        
+
         E.g. permissions to bypass cooldowns, update settings, disable the bot, etc.
         True for the streamer themselves, and the users set as the allowed users.
 
         Args:
-            m (Message): The Message object that was sent from Twitch. 
+            m (Message): The Message object that was sent from Twitch.
                 Has `user` and `channel` attributes.
         """
         return m.user == m.channel or m.user in self.allowed_users
