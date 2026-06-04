@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class Database:
 
     """
-    The database created is called `MarkovChain_{channel}.db`, 
+    The database created is called `MarkovChain_{channel}.db`,
     and populated with 27 + 27^2 = 756 tables. Firstly, 27 tables with the structure of
     "MarkovStart{char}", i.e. called:
     > MarkovStartA
@@ -19,7 +19,7 @@ class Database:
     > ...
     > MarkovStartZ
     > MarkovStart_
-    These tables store the first two words of a sentence, alongside a "count" frequency. 
+    These tables store the first two words of a sentence, alongside a "count" frequency.
     The suffix of the table name is the first character of the first word in the entry.
 
     For example, from a sentence "I am the developer of this bot", "I am" is learned by creating
@@ -43,7 +43,7 @@ class Database:
     > ...
     > MarkovGrammar_Z
     > MarkovGrammar__
-    These tables store 3-grams, alongside a "count" frequency of this 3-gram. The suffix of the 
+    These tables store 3-grams, alongside a "count" frequency of this 3-gram. The suffix of the
     table name is the first character of the first word in the 3-gram, with the first character
     of the second word in the 3-gram.
 
@@ -60,7 +60,7 @@ class Database:
 
 
 
-    The core of the knowledge base are the MarkovGrammar tables, which can be used to create 
+    The core of the knowledge base are the MarkovGrammar tables, which can be used to create
     functions that take a certain number of words as input, and then generate a new word. For example:
     Given "I am", we can use the MarkovGrammarIA table to look for entries that have "I" as the first word,
     and "am" as the second word. If there are multiple options, we can use the "count" frequency as
@@ -69,20 +69,20 @@ class Database:
 
 
     Important notes:
-    - Learning is *case sensitive*. The 3-gram "YOU ARE A" will become a different entry than "you are a". 
+    - Learning is *case sensitive*. The 3-gram "YOU ARE A" will become a different entry than "you are a".
       This is most important when learning emotes, where the distinction between "Kappa" and "kappa" truly is important.
     - Generating is *case insensitive*. Generating when using "YOU ARE" as the previous words to use in e.g. self.get_next()
       will get the same results as generating using "you are".
 
     - Learning and generating is *punctuation insensitive*. Each sentence is tokenized to split commas, dots, apostrophes, etc.
       As a result, the sentence "Hello, I'm Tom!" is tokenized to: ["Hello", ",", "I", "'m", "Tom", "!"]. Then, 3-grams of this
-      is learned. 
+      is learned.
 
     - Both learning and generating is *punctuation sensitive*. "Hello, how are" will learn and generate differently than
-      "Hello how are", as the first word is taken as "Hello,", which differs from "Hello". 
-      A solution is to completely remove punctuation. Before learning, before generating, etc. 
+      "Hello how are", as the first word is taken as "Hello,", which differs from "Hello".
+      A solution is to completely remove punctuation. Before learning, before generating, etc.
       Essentially ignore that it exists.
-      However, this is not entirely desirable. In a perfect world, we would like to learn "hello," 
+      However, this is not entirely desirable. In a perfect world, we would like to learn "hello,"
       and "hello" differently, just like "HELLO" and "hello", but allow generating from "hello"
       to both get results from "hello" and "hello,".
     """
@@ -269,9 +269,9 @@ class Database:
         This first copies `MarkovChain_{channel}.db` to `MarkovChain_{channel}_modified.db`.
         This new copy is then modified. The original is never changed, to avoid issues when the
         update is interrupted. As a result, running the program again will just re-attempt the
-        update. 
+        update.
 
-        Upon completing the update, the original database is renamed to 
+        Upon completing the update, the original database is renamed to
         `MarkovChain_{channel}_backup.db`, while the newly modified `MarkovChain_{channel}_modified.db`
         is renamed to `MarkovChain_{channel}.db`.
 
@@ -348,7 +348,7 @@ class Database:
                     raw_string = " ".join(tup)
                     tokenized = tokenize(raw_string)
                     two_gram = tokenized[:2]
-                    # In case there was some issue in the previous Database 
+                    # In case there was some issue in the previous Database
                     if len(two_gram) < 2:
                         continue
                     self.add_execute_queue(f'''
@@ -469,11 +469,11 @@ class Database:
     def add_execute_queue(self, sql: str, values: Tuple[Any] = None, auto_commit: bool = True) -> None:
         """Add query and corresponding values to a queue, to be executed all at once.
 
-        This entire queue can be executed with `self.execute_commit`, 
+        This entire queue can be executed with `self.execute_commit`,
         and the queue is automatically executed if there are more than 25 waiting queries.
 
         Args:
-            sql (str): The SQL query to add, potentially with "?" for where 
+            sql (str): The SQL query to add, potentially with "?" for where
                 a value ought to be filled in.
             values ([Tuple[Any]], optional): Optional tuple of values to replace "?" in SQL queries.
                 Defaults to None.
@@ -483,7 +483,7 @@ class Database:
         else:
             self._execute_queue.append([sql])
         # Commit these executes if there are more than 25 queries
-        if auto_commit and len(self._execute_queue) > 25:
+        if auto_commit and len(self._execute_queue) > 1:
             self.execute_commit()
 
     def execute_commit(self, fetch: bool = False) -> Any:
@@ -511,7 +511,7 @@ class Database:
         """Execute the SQL query with the corresponding values, potentially returning a result.
 
         Args:
-            sql (str): The SQL query to add, potentially with "?" for where 
+            sql (str): The SQL query to add, potentially with "?" for where
                 a value ought to be filled in.
             values ([Tuple[Any]], optional): Optional tuple of values to replace "?" in SQL queries.
                 Defaults to None.
@@ -566,7 +566,7 @@ class Database:
             username (str): The username of the user to check.
 
         Returns:
-            List[Tuple[str]]: Either an empty list, or [('test_user',)]. 
+            List[Tuple[str]]: Either an empty list, or [('test_user',)].
                 Allows the use of `if not check_whisper_ignore(user): whisper(user)`
         """
         return self.execute("""
@@ -589,7 +589,7 @@ class Database:
     def check_equal(self, l: List[Any]) -> bool:
         """True if `l` consists of items that are all identical
 
-        Useful for checking if we're learning that a sequence of the same words leads to the same word, 
+        Useful for checking if we're learning that a sequence of the same words leads to the same word,
         which can cause infinite loops when generating.
 
         Args:
@@ -694,7 +694,7 @@ class Database:
         in the sequence, and then increase the weight after the 15th index.
 
         Args:
-            data ([type]): A list of word - frequency pairs, e.g. 
+            data ([type]): A list of word - frequency pairs, e.g.
                 [('"the', 1), ('long', 1), ('well', 5), ('an', 2), ('a', 3), ('much', 1)]
             index (int, optional): The index of the newly generated word in the sentence.
                 Used for modifying how often the <END> token occurs. Defaults to 0.
@@ -742,17 +742,17 @@ class Database:
     def add_rule_queue(self, item: List[str]) -> None:
         """Adds a rule to the queue, ready to be entered into the knowledge base, given a 3-gram `item`.
 
-        The rules on the queue are added with `self.add_execute_queue`, 
+        The rules on the queue are added with `self.add_execute_queue`,
         which automatically executes the queries in the queue when there are enough queries waiting.
 
-        Whenever `item` consists of three identical words, e.g. ["Kappa", "Kappa", "Kappa"], then 
+        Whenever `item` consists of three identical words, e.g. ["Kappa", "Kappa", "Kappa"], then
         we perform no learning. If we did, this could cause infinite recursion in generation.
 
         Args:
             item (List[str]): A 3-gram, e.g. ['How', 'are', 'you']. This is learned by placing this
-                in the MarkovGrammarHA table, where it can be seen as: 
+                in the MarkovGrammarHA table, where it can be seen as:
                 *Given ["How", "are"], then "you" is a potential output*
-                The frequency of this word as an output is then incremented, 
+                The frequency of this word as an output is then incremented,
                 allowing for weighted picking of outputs.
         """
         # Filter out recursive case.
@@ -776,7 +776,7 @@ class Database:
     def add_start_queue(self, item: List[str]) -> None:
         """Adds a rule to the queue, ready to be entered into the knowledge base, given a 2-gram `item`.
 
-        The rules on the queue are added with `self.add_execute_queue`, 
+        The rules on the queue are added with `self.add_execute_queue`,
         which automatically executes the queries in the queue when there are enough queries waiting.
 
         Args:
