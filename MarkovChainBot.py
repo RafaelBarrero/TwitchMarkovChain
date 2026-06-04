@@ -40,9 +40,7 @@ class MarkovChain:
             t.start()
 
         # Set up daemon Timer to send automatic generation messages
-        if self.automatic_generation_timer > 0:
-            if self.automatic_generation_timer < 30:
-                raise ValueError("Value for \"AutomaticGenerationMessage\" in must be at least 30 seconds, or a negative number for no automatic generations.")
+        if self.automatic_generation_timer > 0 and self.send_type == "Timer":
             t = LoopingTimer(self.automatic_generation_timer, self.send_automatic_generation_message)
             t.start()
 
@@ -439,7 +437,7 @@ class MarkovChain:
 
         Args:
             emotes (str): String containing all emotes used in the message.
-        
+
         Returns:
             List[str]: List of strings that show modifiers, such as "_HZ" for horizontal flip.
         """
