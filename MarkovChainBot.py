@@ -1,5 +1,6 @@
 import random
 from typing import List, Tuple
+import unicodedata
 
 import nltk
 import requests
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 class MarkovChain:
     def __init__(self):
         self.prev_message_t = 0
+        self.prev_message_custom_t = 0
         self._enabled = True
         # This regex should detect similar phrases as links as Twitch does
         self.link_regex = re.compile(r"\w+\.[a-z]{2,}")
@@ -115,6 +117,31 @@ class MarkovChain:
                 with open(self.oauth_path, "r", encoding="utf-8") as file2:
                     token = file2.read().strip()
                     self.auth = f"oauth:{token}"
+
+    @staticmethod
+    def normalize_and_words(text: str):
+        # Quitar caracteres de control / invisibles comunes y normalizar
+        # Eliminamos categorías "C" (Other) que incluyen control chars y marks invisibles
+        text = ''.join(ch for ch in text if unicodedata.category(ch)[0] != "C")
+        # Normalización unicode y minúsculas
+        text = unicodedata.normalize("NFKC", text).lower()
+        # Usar la función tokenize del proyecto si está disponible
+        tokens = tokenize(text)
+        # Filtrar signos de puntuación (igual criterio que sentence_length)
+        words = [t for t in tokens if t not in string.punctuation and (not t.startswith("'"))]
+        return words
+
+    @staticmethod
+    def is_subsequence(key_words, message_words):
+        if not key_words:
+            return False
+        i = 0
+        for w in message_words:
+            if w == key_words[i]:
+                i += 1
+                if i == len(key_words):
+                    return True
+        return False
 
     def message_handler(self, m: Message):
         try:
@@ -211,6 +238,20 @@ class MarkovChain:
                     self.random_automatic_generation_message_count = random.randint(1, self.automatic_generation_message_count)
                     self.send_activity_generation_message()
                     logger.info(f"Se mandará un mensaje cada {self.random_automatic_generation_message_count} mensajes.")
+
+                cur_time_custom = time.time()
+                message_words = self.normalize_and_words(m.message)
+                if self.prev_message_custom_t + self.cooldown < cur_time_custom:
+                    for item in self.custom_sentences:
+                        for key, value in item.items():
+                            if key.lower() in m.message.lower():
+                                self.ws.send_message(value)
+                                break
+                            key_words = self.normalize_and_words(key)
+                            if self.is_subsequence(key_words, message_words):
+                                self.ws.send_message(value)
+                                break
+                    self.prev_message_custom_t = time.time()
 
                 if m.user.lower() != self.nick.lower(): self.prev_message_t = time.time()  # Actualizar el timestamp
 
