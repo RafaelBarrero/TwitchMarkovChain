@@ -203,6 +203,17 @@ class MarkovChain:
                 elif self.check_link(m.message):
                     return
 
+                # Count activity
+                self.generator_counter = self.generator_counter + 1
+
+                # Check if we should generate a message and send it to chat
+                if self.generator_counter >= self.random_automatic_generation_message_count and self.send_type == "Message":
+                    self.random_automatic_generation_message_count = random.randint(1, self.automatic_generation_message_count)
+                    self.send_activity_generation_message()
+                    logger.info(f"Se mandará un mensaje cada {self.random_automatic_generation_message_count} mensajes.")
+
+                if m.user.lower() != self.nick.lower(): self.prev_message_t = time.time()  # Actualizar el timestamp
+
                 if "emotes" in m.tags:
                     # If the list of emotes contains "emotesv2_", then the message contains a bit emote,
                     # and we choose not to learn from those messages.
@@ -594,6 +605,23 @@ class MarkovChain:
             bool: True if the message contains a link.
         """
         return self.link_regex.search(message)
+
+    def send_activity_generation_message(self) -> None:
+        """Based on chat activity, send a generation message to the connected chat.
+        """
+        self.generator_counter = 0
+        if self.awake:
+            sentence, success = self.generate()
+            if success:
+                logger.info(sentence)
+                # Try to send a message. Just log a warning on fail
+                try:
+                    self.ws.send_message(sentence)
+                except socket.OSError as error:
+                    logger.warning(f"[OSError: {error}] upon sending automatic generation message. Ignoring.")
+            else:
+                logger.info(
+                    "Attempted to output automatic generation message, but there is not enough learned information yet.")
 
     def perform_maintenance_tasks(self) -> None:
         # Handle automatically enabling/disabling messaging, as well as statistics
