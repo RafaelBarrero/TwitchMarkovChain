@@ -34,6 +34,10 @@ class MarkovChain:
         Settings(self)
         self.db = Database(self.chan)
 
+        # Set up daemon Timer to perform maintenance tasks
+        self.maintenance_timer = LoopingTimer(self.disable_after * 60, self.perform_maintenance_tasks)
+        self.maintenance_timer.start()
+
         # Set up daemon Timer to send help messages
         if self.help_message_timer > 0:
             if self.help_message_timer < 300:
@@ -590,6 +594,19 @@ class MarkovChain:
             bool: True if the message contains a link.
         """
         return self.link_regex.search(message)
+
+    def perform_maintenance_tasks(self) -> None:
+        # Handle automatically enabling/disabling messaging, as well as statistics
+        # If there are no messages in the last disable_after minutes we disable the bot
+        if self.prev_message_t == 0:
+            return
+        if (self.awake or self._enabled) and ((time.time() - self.prev_message_t) > (self.disable_after * 60)):
+            logger.debug(
+                f"now={time.time():.6f}, prev={self.prev_message_t:.6f}, diff={time.time() - self.prev_message_t:.6f}, threshold={self.disable_after * 60}")
+            logger.info(f"Bot inactivo por más de {self.disable_after} minuto(s). Desactivando...")
+            self.awake = False
+            self._enabled = False
+            self.generator_counter = 0
 
 if __name__ == "__main__":
     d = Downloader()
