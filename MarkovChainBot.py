@@ -27,6 +27,8 @@ class MarkovChain:
         # List of moderators used in blacklist modification, includes broadcaster
         self.mod_list = []
         self.set_blacklist()
+        self.generator_counter = 0
+        self.awake = False
 
         # Fill previously initialised variables with data from the settings.txt file
         Settings(self)
@@ -116,6 +118,12 @@ class MarkovChain:
                 logger.info(f"Successfully joined channel: #{m.channel}")
 
             elif m.type in ("PRIVMSG", "WHISPER"):
+                if self.autowake and not self.awake and self.send_type == "Message":
+                    self.awake = True
+                    logger.info(f"Bot activo mediante mensaje! Se mandará un mensaje cada {self.random_automatic_generation_message_count} mensajes.")
+                if not self._enabled and self.send_type == "Timer":
+                    self._enabled = True
+                    logger.info(f"Bot activo de nuevo mediante Timer! Se mandará un mensaje cada {self.automatic_generation_timer} segundos.")
                 if m.message.startswith("!enable") and self.check_if_permissions(m):
                     if self._enabled:
                         self.ws.send_whisper(m.user, "The generate command is already enabled.")
