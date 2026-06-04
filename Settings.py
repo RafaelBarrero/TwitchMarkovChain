@@ -27,9 +27,11 @@ class SettingsData(TypedDict):
 
 class Settings:
     """ Loads data from settings.json into the bot """
-    
+
     PATH = os.path.join(os.getcwd(), "settings.json")
-    
+    OAUTH_PATH = os.path.join(os.getcwd(), "streameroauth.txt")
+    OAUTH_PATH_REFRESH = os.path.join(os.getcwd(), "streameroauth_refresh.txt")
+
     DEFAULTS: SettingsData = {
         "Host": "irc.chat.twitch.tv",
         "Port": 6667,
@@ -59,7 +61,7 @@ class Settings:
         """
         settings = Settings.read_settings()
         bot.set_settings(settings)
-    
+
     @staticmethod
     def read_settings() -> dict:
         """Read the settings file and return the contents as a dict.
@@ -68,7 +70,7 @@ class Settings:
 
         Raises:
             ValueError: Whenever the settings.json file is not valid JSON.
-            FileNotFoundError: Whenever the settings file was not found. 
+            FileNotFoundError: Whenever the settings file was not found.
                 Will generate a new default settings file.
 
         Returns:
@@ -80,7 +82,7 @@ class Settings:
         try:
             # Try to load the file using json.
             # And pass the data to the Bot class instance if this succeeds.
-            with open(Settings.PATH, "r") as f:
+            with open(Settings.PATH, "r", encoding="utf-8") as f:
                 text_settings = f.read()
                 settings: SettingsData = json.loads(text_settings)
                 Settings.update_v1(settings)
@@ -95,7 +97,7 @@ class Settings:
 
                     # Add missing defaults
                     settings = {**Settings.DEFAULTS, **settings}
-                    Settings.write_settings_file(settings)
+                    # Settings.write_settings_file(settings)
 
                 return settings
 
@@ -130,7 +132,7 @@ class Settings:
                     f.truncate(0)
                     f.write("\n".join(banned_list))
                     logger.info("Moved Banned Words to the blacklist.txt file.")
-            
+
             except FileNotFoundError:
                 with open("blacklist.txt", "w") as f:
                     logger.info("Moving Banned Words to a new blacklist.txt file...")
@@ -138,13 +140,13 @@ class Settings:
                     banned_list = sorted(list(set(settings["BannedWords"])), key=lambda x: len(x), reverse=True)
                     f.write("\n".join(banned_list))
                     logger.info("Moved Banned Words to a new blacklist.txt file.")
-            
+
             # Remove BannedWords list from data dictionary, and then write it to the settings file
             del settings["BannedWords"]
 
             with open(Settings.PATH, "w") as f:
                 f.write(json.dumps(settings, indent=4, separators=(",", ": ")))
-            
+
             logger.info("Updated Blacklist system to new version.")
 
     @staticmethod
@@ -157,7 +159,7 @@ class Settings:
                 data: SettingsData = json.loads(settings)
                 # Add missing fields from Settings.DEFAULT to data
                 corrected_data = {**Settings.DEFAULTS, **data}
-            
+
             # Write the new settings file
             with open(Settings.PATH, "w") as f:
                 f.write(json.dumps(corrected_data, indent=4, separators=(",", ": ")))
@@ -185,7 +187,7 @@ class Settings:
         """Update the "Cooldown" value in the settings file.
 
         Args:
-            cooldown (int): The integer representing the amount of seconds of cooldown 
+            cooldown (int): The integer representing the amount of seconds of cooldown
                 between outputted generations.
         """
         with open(Settings.PATH, "r") as f:
@@ -202,7 +204,7 @@ class Settings:
         """Get the "Channel" value from the settings file.
 
         Returns:
-            str: The name of the Channel described in the settings file. 
+            str: The name of the Channel described in the settings file.
                 Stripped of "#" and converted to lowercase.
         """
         settings = Settings.read_settings()
