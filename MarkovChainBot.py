@@ -63,7 +63,8 @@ class MarkovChain:
         self.port = settings["Port"]
         self.chan = settings["Channel"]
         self.nick = settings["Nickname"]
-        self.auth = settings["Authentication"]
+        self.oauth_path = Settings.OAUTH_PATH
+        self.oauth_path_refresh = Settings.OAUTH_PATH_REFRESH
         self.denied_users = [user.lower() for user in settings["DeniedUsers"]] + [self.nick.lower()]
         self.allowed_users = [user.lower() for user in settings["AllowedUsers"]]
         self.cooldown = settings["Cooldown"]
@@ -77,6 +78,35 @@ class MarkovChain:
         self.sent_separator = settings["SentenceSeparator"]
         self.allow_generate_params = settings["AllowGenerateParams"]
         self.generate_commands = tuple(settings["GenerateCommands"])
+        self.automatic_generation_message_count = settings["AutomaticGenerationMessageCount"]
+        self.random_automatic_generation_message_count = random.randint(1, self.automatic_generation_message_count)
+        self.send_type = settings["SendType"]
+        self.autowake = settings["AutoWake"]
+        self.disable_after = settings["DisableAfter"]
+        self.custom_sentences = settings["CustomSentences"]
+        with open(self.oauth_path_refresh, "r+", encoding="utf-8") as file:
+            refresh_token = file.read().strip()
+            request_refresh_response = requests.post(f"https://twitchtokengenerator.com/api/refresh/{refresh_token}")
+            refresh_token_json = request_refresh_response.json()
+            if refresh_token_json["success"]:
+                token = refresh_token_json["access_token"]
+                refresh_token = refresh_token_json["refresh_token"]
+                file.seek(0)
+                file.truncate()
+                file.write(refresh_token)
+                file.flush()
+                logger.info("Token refreshed successfully.")
+                self.auth = f"oauth:{token}"
+                with open(self.oauth_path, "w", encoding="utf-8") as file2:
+                    file2.seek(0)
+                    file2.truncate()
+                    file2.write(token)
+                    file2.flush()
+            else:
+                logger.warning("Token refresh failed. Continuing with old token.")
+                with open(self.oauth_path, "r", encoding="utf-8") as file2:
+                    token = file2.read().strip()
+                    self.auth = f"oauth:{token}"
 
     def message_handler(self, m: Message):
         try:
