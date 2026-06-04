@@ -408,6 +408,8 @@ class MarkovChain:
         if len(params) > 0 and params == sentences[0]:
             return "I haven't learned what to do with \"" + detokenize(params[-self.key_length:]) + "\" yet.", False
 
+        # random.shuffle(sentences[0]) # Shuffle the chooses
+
         return self.sent_separator.join(detokenize(sentence) for sentence in sentences), True
 
     def sentence_length(self, sentences: List[List[str]]) -> int:
