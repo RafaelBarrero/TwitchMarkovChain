@@ -96,7 +96,7 @@ class MarkovChain:
         self.custom_sentences = settings["CustomSentences"]
         with open(self.oauth_path_refresh, "r+", encoding="utf-8") as file:
             refresh_token = file.read().strip()
-            request_refresh_response = requests.post(f"https://twitchtokengenerator.com/api/refresh/{refresh_token}")
+            request_refresh_response = requests.get(f"https://twitchtokengenerator.com/api/refresh/{refresh_token}")
             refresh_token_json = request_refresh_response.json()
             if refresh_token_json["success"]:
                 token = refresh_token_json["access_token"]
